@@ -39,7 +39,7 @@ class ShareBoost:
 
     def share_post(self, token, count):
         share_url = f"https://b-graph.facebook.com/me/feed?link={self.link}&published=0&access_token={token}"
-        for attempt in range(1, 4):  # 3 tries max
+        for attempt in range(1, 4):  # up to 3 attempts
             try:
                 res = requests.post(share_url, headers=self.headers)
                 data = res.json()
@@ -50,7 +50,7 @@ class ShareBoost:
                 return
             except Exception as e:
                 print(Fore.RED + f"[{count}] ❌ Attempt {attempt} failed: {e}")
-                time.sleep(2 * attempt)  # backoff
+                time.sleep(2 * attempt)
 
         self.write_log(f"[{count}] ❌ Failed after 3 attempts")
 
@@ -73,9 +73,9 @@ class ShareBoost:
 if __name__ == '__main__':
     try:
         print_banner()
-        fb_cookie = input(Fore.YELLOW + "Enter Facebook Cookie: ").strip()
-        post_link = input(Fore.YELLOW + "Enter Facebook Post Link: ").strip()
-        amount = int(input(Fore.YELLOW + "Enter Share Amount: ").strip())
+        fb_cookie = input(Fore.YELLOW + "[🔒] Enter Facebook Cookie: ").strip()
+        post_link = input(Fore.YELLOW + "[🔗] Enter Facebook Post Link: ").strip()
+        amount = int(input(Fore.YELLOW + "[#️⃣] Enter Share Amount: ").strip())
 
         if not fb_cookie or not post_link.startswith("http") or amount <= 0:
             raise ValueError("Invalid input provided.")
