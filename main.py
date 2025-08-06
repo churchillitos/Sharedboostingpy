@@ -11,7 +11,7 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 info = {
-    "owner": "admin",
+    "owner": "chilli",
     "facebook": "N/A",
     "tool": "Spamshare",
     "version": "1.0"
