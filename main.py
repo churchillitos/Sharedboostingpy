@@ -10,78 +10,98 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-def print_banner():
-    print(Fore.CYAN + Style.BRIGHT + """
-╔════════════════════════════════════════════╗
-║     🚀 SHARE BOOSTING TOOL BY CHILLI       ║
-╚════════════════════════════════════════════╝
-    """)
+info = {
+    "owner": "admin",
+    "facebook": "N/A",
+    "tool": "Spamshare",
+    "version": "1.0"
+}
 
-class ShareBoost:
-    def __init__(self, cookie, link, amount):
+def clear_console():
+    os.system("cls" if os.name == "nt" else "clear")
+
+def banner():
+    print(Fore.CYAN + "=" * 60)
+    print(Fore.GREEN + Style.BRIGHT + f"  TOOL: {info['tool']}   |   VERSION: {info['version']}")
+    print(Fore.YELLOW + Style.BRIGHT + f"  OWNER: {info['owner']}   |   FACEBOOK: {info['facebook']}")
+    print(Fore.CYAN + "=" * 60)
+
+class Share:
+    def __init__(self, cookie, post, share_count):
         self.cookie = cookie
-        self.link = link
-        self.amount = amount
+        self.post = post
+        self.share_count = share_count
         self.headers = {
-            'user-agent': 'Mozilla/5.0',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'sec-ch-ua': '"Google Chrome";v="107", "Chromium";v="107", "Not=A?Brand";v="24"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': 'Windows',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
             'cookie': cookie
         }
-        self.log_path = f"logs/shares-{datetime.now().strftime('%Y%m%d')}.txt"
-        os.makedirs("logs", exist_ok=True)
 
     def get_token(self):
-        url = 'https://business.facebook.com/content_management'
+        url = "https://business.facebook.com/content_management"
         res = requests.get(url, headers=self.headers)
-        match = re.search(r'EAAG(.*?)\\"', res.text)
+        match = re.search(r'EAAG(.*?)","', res.text)
         if not match:
-            raise Exception("Access token not found")
-        return 'EAAG' + match.group(1)
+            raise Exception("Token not found. Check your cookie.")
+        return "EAAG" + match.group(1)
 
-    def share_post(self, token, count):
-        share_url = f"https://b-graph.facebook.com/me/feed?link={self.link}&published=0&access_token={token}"
-        for attempt in range(1, 4):  # up to 3 attempts
+    def share(self, token):
+        self.headers['accept-encoding'] = 'gzip, deflate'
+        self.headers['host'] = 'b-graph.facebook.com'
+
+        for count in range(1, self.share_count + 1):
             try:
-                res = requests.post(share_url, headers=self.headers)
-                data = res.json()
-                if 'id' not in data:
-                    raise Exception("Share failed or blocked")
-                print(Fore.GREEN + f"[{count}] ✅ Shared (Try {attempt})")
-                self.write_log(f"[{count}] ✅ Shared successfully (Try {attempt})")
-                return
+                url = f"https://b-graph.facebook.com/me/feed?link={self.post}&published=0&access_token={token}"
+                res = requests.post(url, headers=self.headers)
+                if 'id' in res.json():
+                    print(Fore.GREEN + f"[+] {count}/{self.share_count} shared successfully.")
+                else:
+                    print(Fore.RED + "[!] Cookie may be invalid or blocked. Exiting...")
+                    break
             except Exception as e:
-                print(Fore.RED + f"[{count}] ❌ Attempt {attempt} failed: {e}")
-                time.sleep(2 * attempt)
+                print(Fore.RED + f"[!] Request failed: {e}")
+                break
 
-        self.write_log(f"[{count}] ❌ Failed after 3 attempts")
+        print(Fore.GREEN + Style.BRIGHT + "[*] Sharing process completed.")
 
-    def write_log(self, text):
-        with open(self.log_path, "a") as log:
-            log.write(f"{datetime.now().strftime('%H:%M:%S')} {text}\n")
+def run():
+    clear_console()
+    banner()
 
-    def run(self):
-        print_banner()
-        print(Fore.YELLOW + f"Target Link: {self.link}\nShares: {self.amount}\n")
-        token = self.get_token()
+    print()
+    cookie = input(Fore.BLUE + Style.BRIGHT + "[?] Enter Facebook Cookie: ").strip()
 
-        for i in range(1, self.amount + 1):
-            self.share_post(token, i)
-            delay = random.randint(3, 6)
-            time.sleep(delay)
+    print()
+    post = input(Fore.BLUE + Style.BRIGHT + "[?] Enter Post Link: ").strip()
 
-        print(Fore.CYAN + f"\n✅ Done boosting {self.amount} shares!")
-
-if __name__ == '__main__':
+    print()
     try:
-        print_banner()
-        fb_cookie = input(Fore.YELLOW + "[🔒] Enter Facebook Cookie: ").strip()
-        post_link = input(Fore.YELLOW + "[🔗] Enter Facebook Post Link: ").strip()
-        amount = int(input(Fore.YELLOW + "[#️⃣] Enter Share Amount: ").strip())
+        share_count = int(input(Fore.BLUE + Style.BRIGHT + "[?] Number of Shares: ").strip())
+    except ValueError:
+        print(Fore.RED + "[!] Invalid number for shares.")
+        return
 
-        if not fb_cookie or not post_link.startswith("http") or amount <= 0:
-            raise ValueError("Invalid input provided.")
+    if not post.startswith("http") or share_count <= 0:
+        print(Fore.RED + "[!] Invalid post link or share count.")
+        return
 
-        booster = ShareBoost(fb_cookie, post_link, amount)
-        booster.run()
+    clear_console()
+    banner()
+    print(Fore.YELLOW + "[*] Starting sharing process...")
 
+    tool = Share(cookie, post, share_count)
+    try:
+        token = tool.get_token()
+        tool.share(token)
     except Exception as e:
-        print(Fore.RED + f"\n❌ Error: {str(e)}")
+        print(Fore.RED + f"[!] Error: {e}")
+
+if __name__ == "__main__":
+    run()
